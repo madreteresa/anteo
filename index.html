@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Anteo Calendario Film</title>
+<style>
+  :root {
+    --bg: #0e0e12;
+    --surface: #16161c;
+    --surface2: #1e1e28;
+    --border: #2a2a38;
+    --accent: #c8a96e;
+    --accent2: #7b5ea7;
+    --text: #e8e4dc;
+    --text-muted: #7a7a8c;
+    --text-dim: #4a4a5c;
+    --film-strip: #1a1a22;
+    --today-glow: rgba(200, 169, 110, 0.12);
+    --radius: 10px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f5f2eb;
+      --surface: #ffffff;
+      --surface2: #edeae2;
+      --border: #ddd9cf;
+      --accent: #8a6930;
+      --accent2: #5b3f88;
+      --text: #1a1a24;
+      --text-muted: #6a6a7a;
+      --text-dim: #aaa9b5;
+      --film-strip: #e8e5dd;
+      --today-glow: rgba(138, 105, 48, 0.08);
+    }
+  }
+  *, *::before, *::after { box-sizing: inherit; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100%;
+  }
+
+  /* Header */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    height: 64px;
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 100;
+  }
+  .logo-strip {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .logo-hole {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1.5px solid var(--accent);
+  }
+  .logo-text {
+    font-size: 18px;
+    font-weight: normal;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    margin-left: 10px;
+  }
+  .logo-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'Helvetica Neue', sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-left: 4px;
+    align-self: flex-end;
+    margin-bottom: 2px;
+  }
+  .header-spacer { flex: 1; }
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    letter-spacing: 0.06em;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .refresh-btn.spinning .spin-icon { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .last-update {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'Helvetica Neue', sans-serif;
+  }
+
+  /* Week nav */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .week-nav::-webkit-scrollbar { display: none; }
+  .nav-arrow {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .nav-arrow:hover { border-color: var(--accent); color: var(--accent); }
+  .days-tabs {
+    display: flex;
+    gap: 6px;
+    flex: 1;
+  }
+  .day-tab {
+    flex: 1;
+    min-width: 64px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 6px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    color: var(--text-muted);
+  }
+  .day-tab:hover { border-color: var(--accent); color: var(--text); }
+  .day-tab.active {
+    background: var(--today-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .day-tab.today .day-label::after {
+    content: '';
+    display: block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin: 3px auto 0;
+  }
+  .day-label {
+    font-size: 11px;
+    font-family: 'Helvetica Neue', sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .day-num {
+    font-size: 18px;
+    font-weight: normal;
+    line-height: 1.2;
+    margin-top: 2px;
+  }
+
+  /* Main */
+  main {
+    padding: 20px 24px 40px;
+    max-width: 900px;
+  }
+
+  /* Status */
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: 'Helvetica Neue', sans-serif;
+    margin-bottom: 20px;
+  }
+  .status.loading { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted); }
+  .status.error { background: rgba(180, 60, 60, 0.1); border: 1px solid rgba(180, 60, 60, 0.3); color: #e07070; }
+  .status.hidden { display: none; }
+  .pulse {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.4s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* Sala filter */
+  .sala-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+  .sala-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .sala-chip:hover { border-color: var(--accent2); color: var(--text); }
+  .sala-chip.active { background: var(--accent2); border-color: var(--accent2); color: white; }
+
+  /* Day header */
+  .day-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .day-title {
+    font-size: 22px;
+    color: var(--text);
+    font-weight: normal;
+  }
+  .day-title span { color: var(--accent); }
+  .film-count {
+    font-size: 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+  }
+
+  /* Film card */
+  .film-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sala-section { margin-bottom: 20px; }
+  .sala-title {
+    font-size: 11px;
+    font-family: 'Helvetica Neue', sans-serif;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sala-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .film-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    transition: border-color 0.15s;
+  }
+  .film-card:hover { border-color: var(--accent); }
+
+  .film-frame {
+    width: 44px;
+    flex-shrink: 0;
+    background: var(--film-strip);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 2/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .film-perfs {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px 4px;
+    pointer-events: none;
+  }
+  .film-perf-row {
+    display: flex;
+    justify-content: space-between;
+  }
+  .film-perf {
+    width: 5px; height: 5px;
+    background: var(--bg);
+    border-radius: 1px;
+    opacity: 0.6;
+  }
+  .film-initial {
+    font-size: 16px;
+    color: var(--accent);
+    font-style: italic;
+    z-index: 1;
+    position: relative;
+  }
+
+  .film-info { flex: 1; min-width: 0; }
+  .film-title {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+  .film-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .film-genre {
+    background: var(--surface2);
+    border-radius: 3px;
+    padding: 1px 7px;
+    color: var(--accent2);
+  }
+  .showtimes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .showtime {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 9px;
+    font-size: 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .showtime.next {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-dim);
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 14px; opacity: 0.5; }
+  .empty-title { font-size: 16px; color: var(--text-muted); margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; font-family: 'Helvetica Neue', sans-serif; }
+
+  /* Footer note */
+  .footer-note {
+    font-size: 11px;
+    font-family: 'Helvetica Neue', sans-serif;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .footer-note a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    header { padding: 0 16px; height: 56px; }
+    .week-nav { padding: 12px 16px 0; }
+    main { padding: 16px 16px 40px; }
+    .day-num { font-size: 15px; }
+    .day-tab { min-width: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-strip">
+    <div class="logo-hole"></div>
+    <div class="logo-hole"></div>
+    <div class="logo-hole"></div>
+  </div>
+  <div class="logo-text">Anteo</div>
+  <div class="logo-sub">Programmazione</div>
+  <div class="header-spacer"></div>
+  <div class="last-update" id="lastUpdate"></div>
+  <button class="refresh-btn" id="refreshBtn" onclick="loadSchedule(true)">
+    <span class="spin-icon">↻</span> Aggiorna
+  </button>
+</header>
+
+<div class="week-nav">
+  <button class="nav-arrow" onclick="shiftWeek(-1)">‹</button>
+  <div class="days-tabs" id="daysTabs"></div>
+  <button class="nav-arrow" onclick="shiftWeek(1)">›</button>
+</div>
+
+<main>
+  <div class="status loading hidden" id="status">
+    <div class="pulse"></div>
+    <span id="statusText">Carico la programmazione...</span>
+  </div>
+
+  <div class="sala-filter" id="salaFilter"></div>
+
+  <div id="calendarContent"></div>
+</main>
+
+<div class="footer-note">
+  Dati da <a href="https://www.spaziocinema.info/cinema" target="_blank">spaziocinema.info</a> · Anteo Palazzo del Cinema, Milano
+</div>
+
+<script>
+const CACHE_KEY = 'anteo_schedule_v3';
+const CACHE_DURATION = 3 * 60 * 60 * 1000; // 3h
+const ANTEO_CINEMAS = ['Anteo Palazzo del Cinema', 'Anteo Palazzo del Cinema - Milano'];
+const GIORNO_IT = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const GIORNO_SHORT = ['dom','lun','mar','mer','gio','ven','sab'];
+const MESE_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const MESE_SHORT = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+
+let scheduleData = {}; // { "YYYY-MM-DD": [ {film, sala, genre, duration, showtimes:[]} ] }
+let activeSala = 'Tutte';
+let weekOffset = 0;
+let selectedDate = todayKey();
+let saleList = [];
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateFromKey(k) {
+  const [y,m,d] = k.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function keyFromDate(dt) {
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+// ——— Week nav ———
+function getWeekDates() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const start = new Date(today);
+  start.setDate(start.getDate() + weekOffset * 7);
+  return Array.from({length: 7}, (_, i) => {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+}
+
+function renderWeekNav() {
+  const tabs = document.getElementById('daysTabs');
+  const today = todayKey();
+  tabs.innerHTML = '';
+  getWeekDates().forEach(d => {
+    const k = keyFromDate(d);
+    const btn = document.createElement('div');
+    btn.className = 'day-tab' + (k === selectedDate ? ' active' : '') + (k === today ? ' today' : '');
+    btn.innerHTML = `<div class="day-label">${GIORNO_SHORT[d.getDay()]}</div><div class="day-num">${d.getDate()}</div>`;
+    btn.onclick = () => selectDate(k);
+    tabs.appendChild(btn);
+  });
+}
+
+function shiftWeek(dir) {
+  weekOffset += dir;
+  const week = getWeekDates();
+  if (!week.some(d => keyFromDate(d) === selectedDate)) {
+    selectedDate = keyFromDate(week[0]);
+  }
+  renderWeekNav();
+  renderDay();
+}
+
+function selectDate(k) {
+  selectedDate = k;
+  const d = dateFromKey(k);
+  const week = getWeekDates();
+  if (!week.some(w => keyFromDate(w) === k)) {
+    weekOffset = Math.round((d - new Date()) / (7 * 86400000));
+    weekOffset = weekOffset < 0 ? 0 : weekOffset;
+  }
+  renderWeekNav();
+  renderDay();
+}
+
+// ——— Cache ———
+function saveCache(data) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+  } catch(e) {}
+}
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { ts, data } = JSON.parse(raw);
+    if (Date.now() - ts > CACHE_DURATION) return null;
+    return { data, ts };
+  } catch(e) { return null; }
+}
+
+// ——— AI Scraping ———
+async function fetchScheduleFromAI() {
+  // Sostituisci USERNAME e REPO con i tuoi dati GitHub
+  const response = await fetch("https://raw.githubusercontent.com/madreteresa/anteo/main/schedule.json");
+  if (!response.ok) throw new Error("Impossibile recuperare la programmazione aggiornata.");
+  return await response.json();
+}
+
+// ——— Render ———
+function extractSale(data) {
+  const sale = new Set();
+  for (const day of Object.values(data)) {
+    for (const item of day) {
+      if (item.sala) sale.add(item.sala);
+    }
+  }
+  return ['Tutte', ...Array.from(sale).sort()];
+}
+
+function renderSalaFilter() {
+  const el = document.getElementById('salaFilter');
+  el.innerHTML = '';
+  saleList.forEach(s => {
+    const chip = document.createElement('div');
+    chip.className = 'sala-chip' + (s === activeSala ? ' active' : '');
+    chip.textContent = s;
+    chip.onclick = () => { activeSala = s; renderSalaFilter(); renderDay(); };
+    el.appendChild(chip);
+  });
+}
+
+function renderDay() {
+  const content = document.getElementById('calendarContent');
+  const dayData = scheduleData[selectedDate] || [];
+
+  const filtered = activeSala === 'Tutte' ? dayData : dayData.filter(f => f.sala === activeSala);
+
+  const d = dateFromKey(selectedDate);
+  const isToday = selectedDate === todayKey();
+
+  // Group by sala
+  const bySala = {};
+  for (const f of filtered) {
+    const sala = f.sala || 'Sala principale';
+    if (!bySala[sala]) bySala[sala] = [];
+    bySala[sala].push(f);
+  }
+
+  const saleSorted = Object.keys(bySala).sort();
+
+  if (filtered.length === 0 && Object.keys(scheduleData).length > 0) {
+    content.innerHTML = `
+      <div class="day-header">
+        <div class="day-title">${GIORNO_IT[d.getDay()]} <span>${d.getDate()} ${MESE_IT[d.getMonth()]}</span></div>
+      </div>
+      <div class="empty-state">
+        <div class="empty-icon">🎬</div>
+        <div class="empty-title">Nessuna proiezione trovata</div>
+        <div class="empty-sub">Nessun film in programma per questo giorno${activeSala !== 'Tutte' ? ' in questa sala' : ''}.</div>
+      </div>`;
+    return;
+  }
+
+  if (filtered.length === 0) return;
+
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let html = `<div class="day-header">
+    <div class="day-title">${isToday ? 'Oggi — ' : ''}${GIORNO_IT[d.getDay()]} <span>${d.getDate()} ${MESE_IT[d.getMonth()]}</span></div>
+    <div class="film-count">${filtered.length} proiezioni</div>
+  </div><div class="film-grid">`;
+
+  for (const sala of saleSorted) {
+    html += `<div class="sala-section"><div class="sala-title">${sala}</div>`;
+    for (const f of bySala[sala]) {
+      const initial = f.film ? f.film[0].toUpperCase() : '?';
+      const genre = f.genre || '';
+      const dur = f.duration ? `${f.duration} min` : '';
+
+      const showtimesHtml = (f.showtimes || []).map(t => {
+        const [h, m] = t.split(':').map(Number);
+        const tMin = h * 60 + m;
+        const isNext = isToday && tMin > nowMinutes && tMin - nowMinutes <= 120;
+        return `<span class="showtime${isNext ? ' next' : ''}">${t}</span>`;
+      }).join('');
+
+      html += `<div class="film-card">
+        <div class="film-frame">
+          <div class="film-perfs">
+            <div class="film-perf-row"><div class="film-perf"></div><div class="film-perf"></div></div>
+            <div class="film-perf-row"><div class="film-perf"></div><div class="film-perf"></div></div>
+          </div>
+          <div class="film-initial">${initial}</div>
+        </div>
+        <div class="film-info">
+          <div class="film-title">${f.film}</div>
+          <div class="film-meta">
+            ${genre ? `<span class="film-genre">${genre}</span>` : ''}
+            ${dur ? `<span>${dur}</span>` : ''}
+          </div>
+          <div class="showtimes">${showtimesHtml}</div>
+        </div>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  content.innerHTML = html;
+}
+
+function setStatus(type, msg) {
+  const el = document.getElementById('status');
+  const txt = document.getElementById('statusText');
+  if (!type) { el.className = 'status hidden'; return; }
+  el.className = `status ${type}`;
+  txt.textContent = msg;
+}
+
+function setLastUpdate(ts) {
+  const el = document.getElementById('lastUpdate');
+  if (!ts) { el.textContent = ''; return; }
+  const d = new Date(ts);
+  el.textContent = `Aggiornato ${d.toLocaleTimeString('it-IT', {hour:'2-digit', minute:'2-digit'})}`;
+}
+
+async function loadSchedule(force = false) {
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  // Try cache first
+  if (!force) {
+    const cached = loadCache();
+    if (cached) {
+      scheduleData = cached.data;
+      saleList = extractSale(scheduleData);
+      renderSalaFilter();
+      renderDay();
+      setLastUpdate(cached.ts);
+      btn.classList.remove('spinning');
+      return;
+    }
+  }
+
+  setStatus('loading', 'Recupero la programmazione da spaziocinema.info...');
+
+  try {
+    const data = await fetchScheduleFromAI();
+    scheduleData = data;
+    saveCache(data);
+    saleList = extractSale(scheduleData);
+    renderSalaFilter();
+    renderDay();
+    setLastUpdate(Date.now());
+    setStatus(null);
+  } catch(err) {
+    console.error(err);
+    // Try stale cache
+    const cached = loadCache();
+    if (cached && Object.keys(cached.data).length > 0) {
+      scheduleData = cached.data;
+      saleList = extractSale(scheduleData);
+      renderSalaFilter();
+      renderDay();
+      setStatus('error', `Impossibile aggiornare (${err.message}). Dati precedenti visualizzati.`);
+    } else {
+      setStatus('error', `Errore nel caricamento: ${err.message}. Riprova tra poco.`);
+    }
+  }
+
+  btn.classList.remove('spinning');
+}
+
+// Auto-refresh ogni 3 ore
+setInterval(() => {
+  const cached = loadCache();
+  if (!cached) loadSchedule();
+}, 30 * 60 * 1000); // check ogni 30min
+
+// Init
+renderWeekNav();
+loadSchedule();
+</script>
+</body>
+</html>

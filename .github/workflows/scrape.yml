@@ -1,0 +1,35 @@
+name: Update Cinema Schedule
+
+on:
+  schedule:
+    # Esegue ogni giorno alle 06:00 UTC (7:00 italiane)
+    - cron: '0 6 * * *'
+  workflow_dispatch: # Permette anche di avviarlo manualmente con un click da GitHub
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Configura Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Installa dipendenze
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Esegui lo scraper
+        run: python scraper.py
+
+      - name: Salva e carica le modifiche su GitHub
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add schedule.json
+          git commit -m "Automated update: schedule.json [skip ci]" || exit 0
+          git push
